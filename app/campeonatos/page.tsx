@@ -22,6 +22,7 @@ export default function CampeonatosPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <CampeonatoCard
+          id="copa-verao-2025"
           nome="Copa Verão 2025"
           descricao="Torneio de futebol society com 16 times"
           status="em_andamento"
@@ -30,7 +31,9 @@ export default function CampeonatosPage() {
           formato="Mata-mata"
           variant="blue"
         />
+
         <CampeonatoCard
+          id="liga-municipal"
           nome="Liga Municipal"
           descricao="Campeonato municipal de futsal adulto"
           status="pendente"
@@ -39,7 +42,9 @@ export default function CampeonatosPage() {
           formato="Pontos corridos"
           variant="red"
         />
+
         <CampeonatoCard
+          id="torneio-inverno"
           nome="Torneio Inverno"
           descricao="Torneio rápido de fim de semana master server"
           status="finalizado"
