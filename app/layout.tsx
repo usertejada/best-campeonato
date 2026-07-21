@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${geist.className} bg-[#F1F3F7]`}>
         <SidebarProvider>
-          <Sidebar userName="Tejada" userRole="Administrador" />
+          <Sidebar userName="Tejada" userEmail="tejada@championsystem.com" />
           <MainContent>{children}</MainContent>
         </SidebarProvider>
       </body>
