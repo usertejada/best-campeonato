@@ -1,96 +1,88 @@
-// app/campeonato/[id]/page.tsx
+// app/formularios/campeonatos/page.tsx
 
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Trophy } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import { PageHeader } from "@/components/shared/page-header";
+import { Trophy } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FormLayout } from "@/components/ui/form-layout";
 import { FormInput } from "@/components/ui/form-input";
 import { FormTextarea } from "@/components/ui/form-textarea";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormLogoUpload } from "@/components/ui/form-logo-upload";
+import { createCampeonato, uploadCampeonatoLogo } from "@/lib/campeonatos";
 
-// Mock data — depois substitui com fetch do Supabase
-const mockCampeonato = {
-  id: "123",
-  nome: "Copa Verão 2025",
-  descricao: "Campeonato tradicional de verão com os melhores times da região",
-  dataInicio: "2025-01-15",
-  dataTermino: "2025-03-30",
-  formato: "pontos_corridos",
-  numeroTimes: "12",
-  local: "Arena Central",
-  status: "em_andamento",
-  logoUrl: "https://via.placeholder.com/200x120?text=Copa+Verão", // Mock logo
-};
-
-export default function EditarCampeonatoPage() {
+export default function NovoCampeonatoPage() {
   const router = useRouter();
-  const params = useParams();
-  const campeonatoId = params.id;
 
   const [form, setForm] = useState({
-    nome: mockCampeonato.nome,
-    descricao: mockCampeonato.descricao,
-    dataInicio: mockCampeonato.dataInicio,
-    dataTermino: mockCampeonato.dataTermino,
-    formato: mockCampeonato.formato,
-    numeroTimes: mockCampeonato.numeroTimes,
-    local: mockCampeonato.local,
-    status: mockCampeonato.status,
+    nome: "",
+    descricao: "",
+    data_inicio: "",
+    data_termino: "",
+    formato: "",
+    numero_times: "",
+    local: "",
+    status: "pendente",
   });
 
-  const [logoPreview, setLogoPreview] = useState<string | null>(
-    mockCampeonato.logoUrl
-  );
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   function handleLogoChange(file: File | null) {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setLogoPreview(url);
-    } else {
-      setLogoPreview(null);
+    setLogoFile(file);
+    setLogoPreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  async function handleSalvar() {
+    setSalvando(true);
+    setErro(null);
+    try {
+      let logo_url: string | null = null;
+      if (logoFile) {
+        logo_url = await uploadCampeonatoLogo(logoFile);
+      }
+
+      await createCampeonato({
+        nome: form.nome,
+        descricao: form.descricao || null,
+        data_inicio: form.data_inicio || null,
+        data_termino: form.data_termino || null,
+        formato: (form.formato || null) as any,
+        numero_times: form.numero_times ? Number(form.numero_times) : null,
+        local: form.local || null,
+        status: form.status as any,
+        logo_url,
+      });
+      router.push("/campeonatos");
+    } catch (e: any) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
     }
   }
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#F1F3F7] px-4 py-4 md:px-5 md:py-5 lg:px-6 lg:py-6">
-      <PageHeader
-        title="Editar Campeonato"
-        description="Atualize as informações do campeonato"
-        buttonLabel="Editar Campeonato"
-        buttonIcon={Trophy}
-        onButtonClick={() => {}}
-      />
-
-      <button
-        onClick={() => router.push("/campeonatos")}
-        className="flex items-center gap-1.5 text-[#94A3B8] hover:text-[#1E293B] text-[13px] font-medium transition-colors mb-6"
-      >
-        <ArrowLeft size={15} />
-        Voltar para Campeonatos
-      </button>
-
       <FormLayout
-        titulo="Editar Campeonato"
-        descricao="Atualize as informações do campeonato"
+        titulo="Novo Campeonato"
+        descricao="Preencha os dados do campeonato"
         icone={Trophy}
         voltarPara="/campeonatos"
         voltarLabel="Campeonatos"
         logoUpload={
-          <FormLogoUpload
-            label="Logo do Campeonato"
-            onChange={handleLogoChange}
-          />
+          <FormLogoUpload label="Logo do Campeonato" onChange={handleLogoChange} />
         }
-        onSalvar={() => console.log("Salvar alterações", form, "ID:", campeonatoId)}
+        onSalvar={handleSalvar}
       >
+        {erro && <p className="text-[#EF4444] text-[13px] mb-2">Erro: {erro}</p>}
+
         <FormInput
           label="Nome do Campeonato"
           placeholder="Ex: Copa Verão 2025"
@@ -110,14 +102,14 @@ export default function EditarCampeonatoPage() {
           <FormInput
             label="Data de Início"
             type="date"
-            value={form.dataInicio}
-            onChange={(e) => handleChange("dataInicio", e.target.value)}
+            value={form.data_inicio}
+            onChange={(e) => handleChange("data_inicio", e.target.value)}
           />
           <FormInput
             label="Data de Término"
             type="date"
-            value={form.dataTermino}
-            onChange={(e) => handleChange("dataTermino", e.target.value)}
+            value={form.data_termino}
+            onChange={(e) => handleChange("data_termino", e.target.value)}
           />
         </div>
 
@@ -137,8 +129,8 @@ export default function EditarCampeonatoPage() {
             label="Número de Times"
             placeholder="Ex: 16"
             type="number"
-            value={form.numeroTimes}
-            onChange={(e) => handleChange("numeroTimes", e.target.value)}
+            value={form.numero_times}
+            onChange={(e) => handleChange("numero_times", e.target.value)}
           />
         </div>
 

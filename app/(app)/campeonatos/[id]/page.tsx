@@ -1,41 +1,103 @@
-// app/formularios/campeonatos/page.tsx
+// app/campeonato/[id]/page.tsx
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { FormLayout } from "@/components/ui/form-layout";
 import { FormInput } from "@/components/ui/form-input";
 import { FormTextarea } from "@/components/ui/form-textarea";
 import { FormSelect } from "@/components/ui/form-select";
 import { FormLogoUpload } from "@/components/ui/form-logo-upload";
+import { getCampeonatoById, updateCampeonato } from "@/lib/campeonatos";
 
-export default function FormularioCampeonatoPage() {
+export default function EditarCampeonatoPage() {
   const router = useRouter();
+  const params = useParams();
+  const campeonatoId = params.id as string;
 
   const [form, setForm] = useState({
     nome: "",
     descricao: "",
-    dataInicio: "",
-    dataTermino: "",
+    data_inicio: "",
+    data_termino: "",
     formato: "",
-    numeroTimes: "",
+    numero_times: "",
     local: "",
-    status: "",
+    status: "pendente",
   });
+
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCampeonatoById(campeonatoId)
+      .then((c) => {
+        setForm({
+          nome: c.nome,
+          descricao: c.descricao ?? "",
+          data_inicio: c.data_inicio ?? "",
+          data_termino: c.data_termino ?? "",
+          formato: c.formato ?? "",
+          numero_times: c.numero_times?.toString() ?? "",
+          local: c.local ?? "",
+          status: c.status,
+        });
+        setLogoPreview(c.logo_url);
+      })
+      .catch((e) => setErro(e.message))
+      .finally(() => setCarregando(false));
+  }, [campeonatoId]);
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  function handleLogoChange(file: File | null) {
+    // TODO: subir pra um bucket do Supabase Storage e usar a URL real
+    setLogoPreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  async function handleSalvar() {
+    setSalvando(true);
+    setErro(null);
+    try {
+      await updateCampeonato(campeonatoId, {
+        nome: form.nome,
+        descricao: form.descricao || null,
+        data_inicio: form.data_inicio || null,
+        data_termino: form.data_termino || null,
+        formato: (form.formato || null) as any,
+        numero_times: form.numero_times ? Number(form.numero_times) : null,
+        local: form.local || null,
+        status: form.status as any,
+      });
+      router.push("/campeonatos");
+    } catch (e: any) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (carregando) {
+    return (
+      <div className="min-h-screen w-full bg-[#F1F3F7] px-4 py-4 md:px-5 md:py-5 lg:px-6 lg:py-6">
+        <p className="text-[#94A3B8] text-[13px]">Carregando campeonato...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#F1F3F7] px-4 py-4 md:px-5 md:py-5 lg:px-6 lg:py-6">
       <PageHeader
-        title="Novo Campeonato"
-        description="Preencha as informações do campeonato"
-        buttonLabel="Novo Campeonato"
+        title="Editar Campeonato"
+        description="Atualize as informações do campeonato"
+        buttonLabel="Editar Campeonato"
         buttonIcon={Trophy}
         onButtonClick={() => {}}
       />
@@ -48,14 +110,21 @@ export default function FormularioCampeonatoPage() {
         Voltar para Campeonatos
       </button>
 
+      {erro && <p className="text-[#EF4444] text-[13px] mb-4">Erro: {erro}</p>}
+
       <FormLayout
-        titulo="Novo Campeonato"
-        descricao="Preencha as informações do campeonato"
+        titulo="Editar Campeonato"
+        descricao="Atualize as informações do campeonato"
         icone={Trophy}
         voltarPara="/campeonatos"
         voltarLabel="Campeonatos"
-        logoUpload={<FormLogoUpload label="Logo do Campeonato" />}
-        onSalvar={() => console.log("Salvar", form)}
+        logoUpload={
+          <FormLogoUpload
+            label="Logo do Campeonato"
+            onChange={handleLogoChange}
+          />
+        }
+        onSalvar={handleSalvar}
       >
         <FormInput
           label="Nome do Campeonato"
@@ -76,14 +145,14 @@ export default function FormularioCampeonatoPage() {
           <FormInput
             label="Data de Início"
             type="date"
-            value={form.dataInicio}
-            onChange={(e) => handleChange("dataInicio", e.target.value)}
+            value={form.data_inicio}
+            onChange={(e) => handleChange("data_inicio", e.target.value)}
           />
           <FormInput
             label="Data de Término"
             type="date"
-            value={form.dataTermino}
-            onChange={(e) => handleChange("dataTermino", e.target.value)}
+            value={form.data_termino}
+            onChange={(e) => handleChange("data_termino", e.target.value)}
           />
         </div>
 
@@ -103,8 +172,8 @@ export default function FormularioCampeonatoPage() {
             label="Número de Times"
             placeholder="Ex: 16"
             type="number"
-            value={form.numeroTimes}
-            onChange={(e) => handleChange("numeroTimes", e.target.value)}
+            value={form.numero_times}
+            onChange={(e) => handleChange("numero_times", e.target.value)}
           />
         </div>
 
@@ -127,7 +196,6 @@ export default function FormularioCampeonatoPage() {
             ]}
           />
         </div>
-
       </FormLayout>
     </div>
   );

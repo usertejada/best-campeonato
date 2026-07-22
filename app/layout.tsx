@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/sidebar";
-import { SidebarProvider } from "@/components/sidebar-context";
-import { MainContent } from "@/components/main-content";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -21,12 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={`${geist.className} bg-[#F1F3F7]`}>
-        <SidebarProvider>
-          <Sidebar userName="Tejada" userEmail="tejada@championsystem.com" />
-          <MainContent>{children}</MainContent>
-        </SidebarProvider>
-      </body>
+      <body className={`${geist.className} bg-[#F1F3F7]`}>{children}</body>
     </html>
   );
 }
