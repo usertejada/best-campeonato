@@ -1,7 +1,10 @@
 // components/sidebar.tsx
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/avatar";
 import {
   Trophy,
   LayoutDashboard,
@@ -23,6 +26,7 @@ import {
   User,
   Moon,
   LogOut,
+  Pencil,
 } from "lucide-react";
 import { useSidebar } from "@/components/sidebar-context";
 
@@ -68,6 +72,34 @@ function SidebarContent({
   onClose?: () => void;
 }) {
   const initial = userName.charAt(0).toUpperCase();
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(avatarUrl);
+  const [enviandoAvatar, setEnviandoAvatar] = useState(false);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setEnviandoAvatar(true);
+    try {
+      const url = await uploadAvatar(file);
+      setAvatarPreview(url);
+      router.refresh();
+    } catch (err) {
+      console.error("Erro ao enviar avatar:", err);
+    } finally {
+      setEnviandoAvatar(false);
+      e.target.value = "";
+    }
+  }
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
@@ -113,17 +145,39 @@ function SidebarContent({
 
       {/* Cartão do usuário */}
       <div className="flex flex-col items-center px-2 py-5 shrink-0">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={userName}
-            className="w-14 h-14 rounded-full object-cover ring-4 ring-[#2563EB]/25 shrink-0"
+        <div className="relative w-14 h-14 shrink-0">
+          {avatarPreview ? (
+            <img
+              src={avatarPreview}
+              alt={userName}
+              className="w-14 h-14 rounded-full object-cover ring-4 ring-[#2563EB]/25"
+            />
+          ) : (
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-[#38BDF8] to-[#2563EB] ring-4 ring-[#2563EB]/25">
+              <span className="text-white font-semibold text-lg">{initial}</span>
+            </div>
+          )}
+
+          <label
+            htmlFor="avatar-upload"
+            title="Alterar foto"
+            className="absolute -bottom-1 -right-1 flex items-center justify-center w-6 h-6 rounded-full bg-[#2563EB] border-2 border-[#0B1120] cursor-pointer hover:bg-[#3B82F6] transition-colors"
+          >
+            {enviandoAvatar ? (
+              <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+            ) : (
+              <Pencil size={10} color="#FFFFFF" />
+            )}
+          </label>
+          <input
+            id="avatar-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            disabled={enviandoAvatar}
+            className="hidden"
           />
-        ) : (
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-[#38BDF8] to-[#2563EB] ring-4 ring-[#2563EB]/25 shrink-0">
-            <span className="text-white font-semibold text-lg">{initial}</span>
-          </div>
-        )}
+        </div>
 
         <div
           className={`flex flex-col items-center overflow-hidden transition-all duration-300 ${
@@ -134,7 +188,7 @@ function SidebarContent({
             Bem-vindo de volta
           </span>
           <span className="mt-1 text-[#BFDBFE] bg-[#2563EB]/25 text-[11px] font-semibold px-3 py-0.5 rounded-full whitespace-nowrap">
-            {userEmail}
+            {userName}
           </span>
         </div>
       </div>
@@ -218,6 +272,7 @@ function SidebarContent({
           </button>
           <button
             title="Sair"
+            onClick={handleLogout}
             className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 text-[#94A3B8] hover:text-white transition-colors"
           >
             <LogOut size={16} />

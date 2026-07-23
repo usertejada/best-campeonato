@@ -1,20 +1,18 @@
-// app/cadastro/page.tsx
-
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function CadastroPage() {
-  const router = useRouter()
+  const supabase = createClient()
+
+  const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sucesso, setSucesso] = useState(false)
-  const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -24,6 +22,11 @@ export default function CadastroPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: nome,
+        },
+      },
     })
 
     setLoading(false)
@@ -56,6 +59,20 @@ export default function CadastroPage() {
     <div className="flex min-h-screen items-center justify-center">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 p-6">
         <h1 className="text-2xl font-bold">Criar conta</h1>
+
+        <div className="space-y-1">
+          <label htmlFor="nome" className="text-sm font-medium">
+            Nome
+          </label>
+          <input
+            id="nome"
+            type="text"
+            required
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            className="w-full rounded border px-3 py-2"
+          />
+        </div>
 
         <div className="space-y-1">
           <label htmlFor="email" className="text-sm font-medium">
